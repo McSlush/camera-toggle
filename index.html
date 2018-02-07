@@ -1,0 +1,170 @@
+<html>
+
+<head>
+    <script src="https://aframe.io/releases/0.7.1/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@3.0.3/dist/aframe-event-set-component.min.js"></script>
+    <script>
+        AFRAME.registerComponent('change-color-on-hover', {
+            schema: {
+                color: {
+                    default: 'white'
+                }
+            },
+
+            init: function() {
+                var data = this.data;
+                var el = this.el;
+                var defaultColor = el.getAttribute('material').color;
+
+                el.addEventListener('mouseenter', function() {
+                    el.setAttribute('color', data.color);
+                });
+
+                el.addEventListener('mouseleave', function() {
+                    el.setAttribute('color', defaultColor);
+                });
+            }
+        });
+
+        AFRAME.registerComponent('show-wireframe-on-click', {
+
+            schema: {
+                wireframe: {
+                    default: false
+                }
+            },
+
+            init: function() {
+                var data = this.data;
+                var el = this.el;
+
+                el.addEventListener('mousedown', function() {
+                    el.setAttribute('wireframe', true);
+                });
+
+                el.addEventListener('mouseup', function() {
+                    el.setAttribute('wireframe', false);
+                });
+
+                el.addEventListener('mouseleave', function() {
+                    el.setAttribute('wireframe', false);
+                });
+            }
+        });
+
+        var voxels = [];
+        var objectToTexture;
+        AFRAME.registerComponent("show-texture-options-on-hover", {
+            init: function() {
+                objectToTexture = this.el;
+
+                var newVoxelEl;
+                var values = Object.values(this.data);
+                voxel = []
+
+                this.el.addEventListener("mousedown", function() {
+                    for(var i = 0; i < values.length; i++) {
+                        newVoxelEl = document.createElement("a-entity");
+                        newVoxelEl.setAttribute("mixin", "voxel");
+                        newVoxelEl.setAttribute('position', {
+                            x: 0 + i,
+                            y: 0,
+                            z: 1
+                        });
+                        newVoxelEl.setAttribute("material", "src", "#" + values[i]);
+                        newVoxelEl.setAttribute("class", values[i]);
+                        this.appendChild(newVoxelEl);
+                        voxels[i] = newVoxelEl;
+                    }
+                })
+
+                this.el.addEventListener("mouseup", function() {
+                    if(values.length != 0){
+                        for(var i = 0; i < voxels.length; i++) {
+                            if(voxels[i].parentNode != null) {
+                            voxels[i].parentNode.removeChild(voxels[i]);
+                            }
+                        }
+                    }
+                })
+            }
+        });
+
+        AFRAME.registerComponent("get-texture-type", {
+            init: function() {
+                this.el.addEventListener("mouseup", function() {
+                    var texture = this.getAttribute("class");
+                    objectToTexture.setAttribute("material", "src", "#" + texture);
+                    objectToTexture.setAttribute("color", "white");
+
+                })
+            }
+        });
+
+        AFRAME.registerComponent("toggle-visibility", {
+            init: function() {
+                var data = this.data;
+                var el = this.el;
+
+                el.addEventListener('mouseenter', function() {
+                    console.log("hej")
+                    el.setAttribute("material", 'visible', false);
+                });
+
+                el.addEventListener('mouseleave', function() {
+                    el.setAttribute("material", 'visible', true);
+                });
+            }
+        })
+    </script>
+</head>
+
+<body>
+    <a-scene stats>
+        <a-assets>
+            <a-asset-item id="chair" src="obj/model.dae"></a-asset-item>
+            <a-asset-item id="boombox" src="obj/BoomBox/glTF/BoomBox.gltf"></a-asset-item>
+            <a-asset-item id="boombox2" src="obj/BoomBox/glTF2/BoomBox.gltf"></a-asset-item>
+
+            <img id="crate" src="texture/crate.gif">
+            <img id="wood" src="texture/wood.jpg">
+            <a-mixin id="voxel" get-texture-type geometry="primitive: box; height: 0.5; width: 0.5; depth: 0.5;"></a-mixin>
+        </a-assets>
+        <a-sky color="#6EBAA7"></a-sky>
+
+        <a-entity collada-model="#chair" position="-3 0 -2"></a-entity>
+
+        <a-entity gltf-model="#boombox" toggle-visibility position="-2 2 -2" scale="50 50 50" event-set__leave="_event: mouseleave; _target: #boombox; visible: false"></a-entity>
+        <a-entity gltf-model="#boombox2" toggle-visibility visible="false" position="-3 2 -2" scale="50 50 50">
+              <a-animation attribute="visible" begin="2000" to="true"></a-animation>
+        </a-entity>
+
+        <a-box position="-1 0.5 -4" rotation="0 45 0" color="#4CC3D9" change-color-on-hover="color:#8FF7FF"></a-box>
+
+        <a-text value="Now Interactable" geometry="primitive:plane; width: 5;" align="center" position="0 2 -6" event-set__enter="_event: mouseenter; _target: #cylinderText; visible: true;" event-set__leave="_event: mouseleave; _target: #cylinderText; visible: false"></a-text>
+
+        <a-cylinder toggle-visibility class="addTextBox" color="#FFC65D" position="1 0.75 -3" radius="0.5" height="1.5" value="This is a cylinder"
+            change-color-on-hover="color: red" event-set__enter="_event: mouseenter; _target: #cylinderText; visible: true"
+            event-set__leave="_event: mouseleave; _target: #cylinderText; visible: false"
+            event-set__enter2="_event: mouseenter; _target: #cylinderText2; visible: true"
+            event-set__leave2="_event: mouseleave; _target: #cylinderText2; visible: false">
+            <a-text id="cylinderText" value="This is a cylinder" align="center" color="#FFF" visible="false" position="-1 -0.55 1" geometry="primitive: plane; width: 1.75" material="color: #333"></a-text>
+            <a-text id="cylinderText2" value="This is a cylinder2" align="center" color="#FFF" visible="false" position="1 -0.55 1" geometry="primitive: plane; width: 1.75" material="color: #333"></a-text>
+        </a-cylinder>
+
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4" show-wireframe-on-click=""></a-plane>
+
+        <a-box show-texture-options-on-hover="1: crate; 2: wood;" color="#EF2D5E" position="0 3 -4" change-color-on-hover="color: white"></a-box>
+        <a-entity id="camera-wrapper">
+            <a-camera>
+                <a-cursor></a-cursor>
+            </a-camera>
+        </a-entity>
+    </a-scene>
+
+    <script>
+
+    </script>
+</body>
+
+</html>
